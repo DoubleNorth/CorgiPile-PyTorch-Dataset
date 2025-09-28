@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# OS
+.DS_Store
+
+# Environment
+.env
+.venv/
+venv/
+env/
+
+# Logs
+logs/
+*.log
+worker_logs/
+*_worker_logs/
+
+# Data files
+data/
+datasets/
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+
+# Model files
+*.pth
+*.pt
+*.ckpt
