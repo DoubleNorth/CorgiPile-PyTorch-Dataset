@@ -49,6 +49,7 @@ def distributed_example(args):
             block_size=args.block_size,
             load_data_fn=cifar_distributed_local_loader,
             file_filter_fn=cifar_file_filter,
+            log_dir=args.log_dir,
             rank=rank,
             world_size=world_size,
             transform=None
@@ -173,7 +174,8 @@ def main():
     
     # Dataset parameters
     parser.add_argument("--block-size", type=int, default=100, help="Block size")
-    parser.add_argument("--log-dir", default="./distributed_logs_hdfs", help="Log Directory")
+    parser.add_argument("--log-dir", default="./distributed_logs_local", help="Log Directory")
+    # parser.add_argument("--log-dir", default="./distributed_logs_hdfs", help="Log Directory")
     
     args = parser.parse_args()
     distributed_example(args)
