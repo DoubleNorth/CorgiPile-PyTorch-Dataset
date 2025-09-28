@@ -72,7 +72,7 @@ def distributed_example(rank: int, world_size: int, args):
     else:
         raise ValueError(f"Unknown mode: {args.mode}")
     
-    print(f"Rank {rank}: Dataset created with {len(dataset)} samples")
+    # print(f"Rank {rank}: Dataset created with {len(dataset)} samples")
     
     # Process data blocks
     num_blocks = dataset.total_blocks

@@ -194,7 +194,7 @@ class CorgiPileDistributedHDFSDataset(IterableDataset):
                     for idx, (data, label, source_info) in enumerate(sample_iterator):
                         file_id, inner_idx = source_info
                         f.write(f"{file_id}-{inner_idx}\n")
-                        yield (data, label)
+                        yield (data, label, source_info)
         else:
             for data, label, _ in sample_iterator:
                 yield (data, label)

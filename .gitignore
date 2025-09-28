@@ -13,10 +13,10 @@ venv/
 env/
 
 # Logs
-logs/
-*.log
-worker_logs/
-*_worker_logs/
+# logs/
+# *.log
+# worker_logs/
+# *_worker_logs/
 
 # Data files
 data/
