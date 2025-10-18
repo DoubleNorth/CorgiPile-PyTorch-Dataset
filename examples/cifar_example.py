@@ -120,8 +120,7 @@ def cifar_file_filter(file_path: str) -> bool:
 def test_local_dataset():
     """Test LocalDataset with CIFAR-10 data."""
     # Configuration
-    # data_dir = "/path/to/cifar-10-batches-py"  # Update this path
-    data_dir = "/home/yuran/data/cifar-10-batches-py"  # Update this path
+    data_dir = "/path/to/cifar-10-batches-py"  # Update this path
     num_workers = 3
     log_dir = f"./logs/local_test_{num_workers}_workers" 
     block_size = 100
@@ -163,25 +162,12 @@ def test_local_dataset():
 
 def test_hdfs_dataset():
     """Test HDFSDataset with CIFAR-10 data."""
-    # # Configuration
-    # hdfs_root = "/user/data/cifar-10-batches-py"  # Update this path
-    # hdfs_host = "namenode-host"  # Update this
-    # hdfs_port = 9000
-    # hdfs_user = "hadoop-user"  # Update this
-    # log_dir = "./logs/hdfs_test"
-    # block_size = 100
-    # num_workers = 2
-    # batch_size = 32
-    # shuffle = True
-
-
     # Configuration
-    hdfs_root = "/user/yuran/datasets/cifar-10-batches-py"  # Update this path
+    hdfs_root = "/path/to/cifar-10-batches-py"  # Update this path
     hdfs_host = "master"  # Update this
     hdfs_port = 9000
-    hdfs_user = "yuran"  # Update this
-    num_workers = 2
-    log_dir = f"./logs/hdfs_test_{num_workers}_workers" 
+    hdfs_user = "hadoop-user"  # Update this
+    log_dir = "./logs/hdfs_test"
     block_size = 100
     num_workers = 2
     batch_size = 32

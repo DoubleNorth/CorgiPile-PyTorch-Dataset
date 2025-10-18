@@ -164,13 +164,13 @@ def main():
 
 
     # Local filesystem parameters
-    parser.add_argument("--data-dir", default="/home/yuran/data/cifar-10-batches-py", help="Path to CIFAR-10 data directory (local mode)")
+    parser.add_argument("--data-dir", default="/path/to/cifar-10-batches-py", help="Path to CIFAR-10 data directory (local mode)")
     
     # HDFS parameters
-    parser.add_argument("--hdfs-root", default="/user/yuran/datasets/cifar-10-batches-py", help="HDFS root path (hdfs mode)")
+    parser.add_argument("--hdfs-root", default="/path/to/cifar-10-batches-py", help="HDFS root path (hdfs mode)")
     parser.add_argument("--hdfs-host", default="master", help="HDFS namenode host")
     parser.add_argument("--hdfs-port", type=int, default=9000, help="HDFS namenode port")
-    parser.add_argument("--hdfs-user", default="yuran", help="HDFS username")
+    parser.add_argument("--hdfs-user", default="hadoop-user", help="HDFS username")
     
     # Dataset parameters
     parser.add_argument("--block-size", type=int, default=100, help="Block size")
