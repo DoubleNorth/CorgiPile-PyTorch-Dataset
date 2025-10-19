@@ -2,12 +2,39 @@
 
 A high-performance, distributed dataset loading library for PyTorch with advanced shuffling algorithms and seamless scaling from single-machine to multi-machine distributed training.
 
-## Core Advantages
+## Why Choose CorgiPile?
+
+CorgiPile Dataset API is designed for **large-scale machine learning scenarios** where traditional PyTorch DataLoader falls short. Our solution addresses critical challenges in distributed training environments.
+
+### **Perfect For These Scenarios:**
+
+- **Enterprise ML Training**: Large datasets (TB-scale) that don't fit in memory
+- **Multi-Machine Distributed Training**: Seamless scaling from 1 to 100+ machines
+- **Cloud & Cluster Environments**: HDFS, distributed storage systems
+- **High-Performance Computing**: Maximize GPU utilization with efficient data loading
+- **Continuous Training**: Production ML pipelines requiring robust data handling
+
+### **Core Advantages**
 
 ![CorgiPile Family](docs/figures/corgipile_family.png)
 ![CorgiPile Family](docs/figures/corgipile_family_label.png)
 
 **Left: Advanced Dual-Layer Shuffle | Center: Single-Machine Parallelism | Right: Multi-Machine Distribution**
+
+#### **1. Superior Shuffle Quality**
+- **Block+Tuple dual-layer algorithm** provides optimal balance of randomness and efficiency
+- Significantly better than sequential loading, comparable to full randomization
+- **Memory-efficient**: No need to load entire dataset for shuffling
+
+#### **2. Flexible Deployment Options**
+- **Single-machine multi-threading**: Automatic load balancing across workers
+- **Multi-machine distributed**: File-level partitioning with zero data overlap
+- **Universal storage**: Local filesystem, HDFS, extensible to cloud storage
+
+#### **3. Production-Ready Features**
+- **Complete traceability**: Every sample tracked with `(file_id, inner_index)`
+- **Robust error handling**: Graceful failure recovery in distributed environments
+- **Performance monitoring**: Built-in logging and debugging capabilities
 
 <details>
 <summary>View All Shuffle Methods Comparison</summary>
@@ -22,14 +49,11 @@ A high-performance, distributed dataset loading library for PyTorch with advance
 
 </details>
 
-### Key Features
+### **Technical Highlights**
 
-- **Superior Shuffle Quality**: Block+Tuple dual-layer algorithm provides optimal balance of randomness and efficiency
-- **Efficient Single-Machine Parallelism**: Automatic load balancing across workers with zero data overlap
-- **Scalable Multi-Machine Distribution**: Seamless distributed training with file-level partitioning
-- **Memory Efficient**: Block-level processing streams large datasets without loading everything into memory
-- **Complete Traceability**: Every sample tracked with (file_id, inner_index) for debugging and reproducibility
-- **Universal Storage Support**: Local filesystem and HDFS integration with extensible design
+- **Advanced Shuffle Algorithm**: Block+Tuple dual-layer provides optimal randomness vs. efficiency trade-off
+- **Production Debugging**: Full sample traceability with `(file_id, inner_index)` tracking
+- **Storage Agnostic**: Local files, HDFS, easily extensible to S3/GCS
 
 ## Installation
 
@@ -46,59 +70,109 @@ pip install pyarrow>=8.0.0
 
 ## Quick Start
 
-### Basic Local Usage
+### **Step 1: Understanding `load_data_fn`**
+
+The key to using CorgiPile is implementing your custom `load_data_fn`. This function defines **how to read your specific data format**:
+
+```python
+def my_data_loader(file_path: str, **kwargs):
+    """
+    Custom data loading function - adapt this to your data format
+    
+    Args:
+        file_path: Path to the data file
+        **kwargs: Additional info (file_id, etc.)
+        
+    Yields:
+        tuple: (data, label, trace_info)
+               - data: Your actual data (tensor, text, etc.)
+               - label: Ground truth label
+               - trace_info: (file_id, inner_index) for debugging
+    """
+    file_id = kwargs.get('file_id', 0)
+    
+    # Example 1: Text data (TSV format)
+    with open(file_path, 'r') as f:
+        for inner_idx, line in enumerate(f):
+            text, label = line.strip().split('\t')
+            yield (text, int(label), (file_id, inner_idx))
+    
+    # Example 2: JSON data
+    # import json
+    # with open(file_path, 'r') as f:
+    #     for inner_idx, line in enumerate(f):
+    #         data = json.loads(line)
+    #         yield (data['features'], data['label'], (file_id, inner_idx))
+    
+    # Example 3: Binary data
+    # import pickle
+    # with open(file_path, 'rb') as f:
+    #     data = pickle.load(f)
+    #     for inner_idx, (features, label) in enumerate(data):
+    #         yield (features, label, (file_id, inner_idx))
+```
+
+### **Step 2: Single-Machine Usage**
+
+Perfect for **single GPU/multi-core training** with large datasets:
 
 ```python
 import torch
 from torch.utils.data import DataLoader
 from corgipile_dataset_api import CorgiPileLocalDataset
 
-def my_data_loader(file_path: str, **kwargs):
-    """Custom function to load data from files."""
-    file_id = kwargs.get('file_id', 0)
-    
-    with open(file_path, 'r') as f:
-        for inner_idx, line in enumerate(f):
-            data, label = line.strip().split('\t')
-            yield (data, int(label), (file_id, inner_idx))
-
-# Create dataset
+# Create dataset with your custom loader
 dataset = CorgiPileLocalDataset(
-    data_dir="/path/to/your/data",
-    block_size=100,
-    load_data_fn=my_data_loader,
-    shuffle=True,
-    log_dir="./logs"  # Optional logging
+    data_dir="/path/to/your/data",      # Directory with your data files
+    block_size=100,                     # Samples per block (tune for memory)
+    load_data_fn=my_data_loader,        # Your custom loading function
+    shuffle=True,                       # Enable dual-layer shuffle
+    log_dir="./logs"                    # Track data loading (optional)
 )
 
-# Create DataLoader
-dataloader = DataLoader(dataset, batch_size=32, num_workers=4)
+# Standard PyTorch DataLoader - works seamlessly!
+dataloader = DataLoader(
+    dataset, 
+    batch_size=32, 
+    num_workers=4,                      # Multi-threading for performance
+    pin_memory=True                     # GPU optimization
+)
 
-# Train your model
-for batch_idx, (data, labels) in enumerate(dataloader):
+# Train as usual
+for batch_idx, (data, labels, trace_info) in enumerate(dataloader):
+    # trace_info contains (file_id, inner_index) for each sample
     # Your training code here
-    pass
+    outputs = model(data)
+    loss = criterion(outputs, labels)
+    # ...
 ```
 
-### Distributed Training
+### **Step 3: Multi-Machine Distributed Training**
+
+Scale to **multiple machines** with automatic data partitioning:
 
 ```python
 from corgipile_dataset_api import CorgiPileDistributedLocalDataset
 
-# Multi-machine setup
+# Each machine gets different data files automatically
 dataset = CorgiPileDistributedLocalDataset(
-    data_dir="/shared/training/data",
+    data_dir="/shared/training/data",   # Shared storage (NFS, etc.)
     block_size=100,
     load_data_fn=my_data_loader,
-    rank=rank,  # Current machine rank
-    world_size=world_size  # Total number of machines
+    rank=rank,                          # 0, 1, 2, ... (current machine)
+    world_size=world_size               # Total number of machines
 )
+
+# Same DataLoader code - CorgiPile handles the distribution!
+dataloader = DataLoader(dataset, batch_size=32, num_workers=4)
 ```
 
-### HDFS Support
+### **Step 4: HDFS & Big Data Integration**
+
+Perfect for **Hadoop clusters** and **cloud environments**:
 
 ```python
-from corgipile_dataset_api import CorgiPileHDFSDataset
+from corgipile_dataset_api import CorgiPileHDFSDataset, CorgiPileDistributedHDFSDataset
 
 # Single-machine HDFS
 dataset = CorgiPileHDFSDataset(
@@ -107,26 +181,20 @@ dataset = CorgiPileHDFSDataset(
     hdfs_port=9000,
     hdfs_user="hadoop-user",
     block_size=100,
-    load_data_fn=hdfs_data_loader,
+    load_data_fn=my_data_loader,        # Same function works!
     shuffle=True
 )
-```
 
-### Distributed HDFS Training
-
-```python
-from corgipile_dataset_api import CorgiPileDistributedHDFSDataset
-
-# Multi-machine HDFS setup
-dataset = CorgiPileDistributedHDFSDataset(
+# Multi-machine HDFS (for large clusters)
+distributed_dataset = CorgiPileDistributedHDFSDataset(
     hdfs_root="/user/data/training",
     hdfs_host="namenode-host", 
     hdfs_port=9000,
     hdfs_user="hadoop-user",
     block_size=100,
-    load_data_fn=hdfs_data_loader,
-    rank=rank,  # Current machine rank
-    world_size=world_size,  # Total number of machines
+    load_data_fn=my_data_loader,
+    rank=rank,                          # Machine rank in cluster
+    world_size=world_size,              # Total machines
     shuffle=True
 )
 ```
@@ -193,21 +261,45 @@ Every sample includes source information `(file_id, inner_index)` enabling:
 2. **Worker Configuration**: Set `num_workers > 0` in DataLoader for parallel processing
 3. **HDFS Optimization**: Use `multiprocessing_context='spawn'` for HDFS datasets
 
-## Examples
+## **Complete Examples**
 
-The `examples/` directory contains comprehensive examples:
+### **Ready-to-Run Examples**
 
+| Example | Description | Use Case | Code Link |
+|---------|-------------|----------|-----------|
+| **CIFAR-10 Demo** | Complete training pipeline with CIFAR-10 dataset | Learning CorgiPile basics | [`examples/cifar_example.py`](examples/cifar_example.py) |
+| **Distributed Training** | Multi-machine setup with automatic data partitioning | Production distributed training | [`examples/distributed_example.py`](examples/distributed_example.py) |
+
+### **Running the Examples**
+
+#### **1. CIFAR-10 Quick Start**
 ```bash
-# CIFAR-10 local mode
+# Single-machine local training
 python examples/cifar_example.py --mode local
 
-# Single-machine HDFS
-python examples/cifar_example.py --mode hdfs
+# Single-machine with HDFS
+python examples/cifar_example.py --mode hdfs --hdfs_host your-namenode
+```
 
-# Multi-machine local deployment
-python examples/distributed_example.py --mode local --rank n  
+#### **2. Distributed Training (Multiple Machines)**
+```bash
+# On Machine 0 (rank=0)
+python examples/distributed_example.py --mode local --rank 0 --world_size 4
 
-# Multi-machine HDFS deployment
-python examples/distributed_example.py --mode hdfs --rank n
+# On Machine 1 (rank=1)  
+python examples/distributed_example.py --mode local --rank 1 --world_size 4
+
+# On Machine 2 (rank=2)
+python examples/distributed_example.py --mode local --rank 2 --world_size 4
+
+# On Machine 3 (rank=3)
+python examples/distributed_example.py --mode local --rank 3 --world_size 4
+```
+
+#### **3. HDFS Distributed Training**
+```bash
+# Each machine in your cluster
+python examples/distributed_example.py --mode hdfs --rank $RANK --world_size $WORLD_SIZE \
+    --hdfs_host namenode-host --hdfs_port 9000 --hdfs_user hadoop-user
 ```
 
