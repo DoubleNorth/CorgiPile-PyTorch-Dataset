@@ -5,19 +5,20 @@ A high-performance, distributed dataset loading library for PyTorch with advance
 ## Core Advantages
 
 ![CorgiPile Family](docs/figures/corgipile_family.png)
+![CorgiPile Family](docs/figures/corgipile_family_label.png)
 
 **Left: Advanced Dual-Layer Shuffle | Center: Single-Machine Parallelism | Right: Multi-Machine Distribution**
 
 <details>
 <summary>View All Shuffle Methods Comparison</summary>
 
-| Method | Visualization | Description |
-|--------|---------------|-------------|
-| **No Shuffle** | <img src="docs/figures/no_shuffle.png" alt="No Shuffle" width="300"/> | Sequential processing - poor training quality |
-| **Sliding Window** | <img src="docs/figures/sliding_window_shuffle.png" alt="Sliding Window" width="300"/> | Window-based shuffle - limited randomness |
-| **MRS** | <img src="docs/figures/mrs_shuffle.png" alt="MRS" width="300"/> | Multiplexd reservoir sampling - complex implementation |
-| **CorgiPile Dual-Layer** | <img src="docs/figures/block_tuple_shuffle.png" alt="Block+Tuple" width="300"/> | **Optimal balance of randomness and efficiency** |
-| **Fully Random(ideal)** | <img src="docs/figures/fully_shuffle.png" alt="Fully Shuffle" width="300"/> | Complete randomization - memory intensive |
+| Method | Visualization                                                                         | Label Distribution | Description |
+|--------|---------------------------------------------------------------------------------------|-------------------|-------------|
+| **No Shuffle** | <img src="docs/figures/no_shuffle.png" alt="No Shuffle" width="220"/>                 | <img src="docs/figures/no_shuffle_label.png" alt="No Shuffle Label" width="220"/> | Sequential processing - poor training quality |
+| **Sliding Window** | <img src="docs/figures/sliding_window_shuffle.png" alt="Sliding Window" width="220"/> | <img src="docs/figures/sliding_window_shuffle_label.png" alt="Sliding Window Label" width="220"/> | Window-based shuffle - limited randomness |
+| **MRS** | <img src="docs/figures/mrs_shuffle.png" alt="MRS" width="220"/>                       | <img src="docs/figures/mrs_shuffle_label.png" alt="MRS Label" width="220"/> | Multiplexd reservoir sampling - complex implementation |
+| **CorgiPile Dual-Layer** | <img src="docs/figures/block_tuple_shuffle.png" alt="Block+Tuple" width="220"/>       | <img src="docs/figures/block_tuple_shuffle_label.png" alt="Block+Tuple Label" width="220"/> | **Optimal balance of randomness and efficiency** |
+| **Fully Random(ideal)** | <img src="docs/figures/fully_shuffle.png" alt="Fully Shuffle" width="220"/>           | <img src="docs/figures/fully_shuffle_label.png" alt="Fully Shuffle Label" width="220"/> | Complete randomization - memory intensive |
 
 </details>
 

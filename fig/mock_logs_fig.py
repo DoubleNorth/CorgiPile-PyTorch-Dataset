@@ -485,6 +485,150 @@ def plot_block_tuple_shuffle_mock(global_indices, processing_order, output_file=
     
     plt.close()
 
+def plot_mock_label_distribution(data, scenario_name, output_file=None):
+    """Plot label distribution for mock data scenarios."""
+    
+    # Create mock labels for visualization (50% positive, 50% negative)
+    fig = plt.figure(figsize=(3.2, 2.8))
+    ax = fig.add_subplot(111)
+    plt.subplots_adjust(left=0.157, bottom=0.186, right=0.964, top=0.976,
+                       wspace=0.205, hspace=0.2)
+    
+    ax.set_ylabel("#tuples", color='black')
+    ax.set_xlabel("The i-th batch (20 tuples per batch)")
+    
+    if scenario_name == "Block+Tuple Shuffle":
+        # Single list of global indices
+        total_samples = len(data)
+        
+        # Create original labels (first half negative, second half positive - like fig3.py)
+        original_labels = [-1] * (total_samples // 2) + [1] * (total_samples // 2)
+        
+        # Apply the same Block+Tuple shuffle to labels as was applied to data
+        # Simulate block shuffle first, then tuple shuffle
+        block_size = 25  # Same as in simulate_block_tuple_shuffle_single_thread
+        buffer_size = 250
+        
+        # Step 1: Block shuffle on labels
+        shuffled_labels = []
+        block_num = total_samples // block_size
+        
+        # Create block index list and shuffle it (same random seed effect)
+        block_index_list = list(range(block_num))
+        random.shuffle(block_index_list)
+        
+        # Reconstruct labels according to shuffled block order
+        for i in range(block_num):
+            for j in range(block_size):
+                index = block_index_list[i] * block_size + j
+                if index < total_samples:
+                    shuffled_labels.append(original_labels[index])
+        
+        # Step 2: Tuple-level shuffle with buffer
+        buffer = []
+        final_shuffled_labels = []
+        
+        for i in range(len(shuffled_labels)):
+            label = shuffled_labels[i]
+            buffer.append(label)
+            
+            if len(buffer) == buffer_size:
+                # Shuffle buffer and output all
+                random.shuffle(buffer)
+                final_shuffled_labels.extend(buffer)
+                buffer.clear()
+        
+        # Handle remaining labels in buffer
+        if buffer:
+            random.shuffle(buffer)
+            final_shuffled_labels.extend(buffer)
+        
+        # Now calculate batch statistics
+        batch_index_list = []
+        label0_list = []
+        label1_list = []
+        
+        label1_count = 0
+        label0_count = 0
+        batch_size = 20
+        
+        for i in range(len(final_shuffled_labels)):
+            label = final_shuffled_labels[i]
+            
+            if label == 1:
+                label1_count += 1
+            else:
+                label0_count += 1
+            
+            if (i + 1) % batch_size == 0 or i == len(final_shuffled_labels) - 1:
+                batch_index_list.append((i + 1) / batch_size)
+                label1_list.append(label1_count)
+                label0_list.append(label0_count)
+                label1_count = 0
+                label0_count = 0
+        
+        # Plot lines
+        ax.plot(batch_index_list, label1_list, label='label=+1', color='tab:blue')
+        ax.plot(batch_index_list, label0_list, label='label=-1', color='tab:red', linestyle='--')
+        
+    else:
+        # For worker-based scenarios (local single machine, distributed)
+        all_samples = []
+        
+        if scenario_name == "Local Single Machine":
+            # Collect all samples from all workers
+            for worker_id, (global_indices, processing_order) in data.items():
+                all_samples.extend(global_indices)
+        else:  # Distributed scenarios
+            # Collect all samples from all nodes and workers
+            for node_id, workers in data.items():
+                for worker_id, (global_indices, processing_order) in workers.items():
+                    all_samples.extend(global_indices)
+        
+        total_samples = len(all_samples)
+        
+        # Create realistic label distribution for shuffled data
+        batch_index_list = []
+        label0_list = []
+        label1_list = []
+        
+        label1_count = 0
+        label0_count = 0
+        batch_size = 20
+        
+        for i in range(total_samples):
+            # Simulate balanced label distribution after shuffle
+            label = 1 if (i + hash(all_samples[i % len(all_samples)])) % 2 == 0 else -1
+            
+            if label == 1:
+                label1_count += 1
+            else:
+                label0_count += 1
+            
+            if (i + 1) % batch_size == 0 or i == total_samples - 1:
+                batch_index_list.append((i + 1) / batch_size)
+                label1_list.append(label1_count)
+                label0_list.append(label0_count)
+                label1_count = 0
+                label0_count = 0
+        
+        # Plot lines
+        ax.plot(batch_index_list, label1_list, label='label=+1', color='tab:blue')
+        ax.plot(batch_index_list, label0_list, label='label=-1', color='tab:red', linestyle='--')
+    
+    ax.set_ylim(ymin=-1)
+    ax.set_xlim(xmin=0)
+    ax.set_ylim(ymax=21)  # batch_size + 1
+    
+    ax.legend()
+    ax.set_title(scenario_name)
+    
+    if output_file:
+        fig.savefig(output_file, dpi=300, bbox_inches='tight')
+        print(f"Label distribution plot saved to: {output_file}")
+    
+    plt.close()
+
 def analyze_mock_shuffle_quality(data, scenario_name):
     """Analyze the shuffle quality of mock data."""
     print(f"\n=== {scenario_name} Mock Shuffle Analysis ===")
@@ -523,35 +667,45 @@ if __name__ == '__main__':
     
     print("=== CorgiPile Mock Data Visualization ===")
     
-    # # Scenario 0: Block+Tuple Shuffle (Single Thread) - NEW!
-    # print("\n--- Simulating Block+Tuple Shuffle (Single Thread) ---")
-    # print("Config: 1000 samples, block_size=25, buffer_size=250 (same as fig3.py)")
-    #
-    # block_tuple_indices, block_tuple_processing = simulate_block_tuple_shuffle_single_thread(
-    #     total_samples=1000,
-    #     block_size=25,
-    #     buffer_size=250
-    # )
-    #
-    # analyze_mock_shuffle_quality(block_tuple_indices, "Block+Tuple Shuffle")
-    #
-    # block_tuple_output = os.path.join(script_dir, "mock_block_tuple_shuffle.png")
-    # plot_block_tuple_shuffle_mock(block_tuple_indices, block_tuple_processing, block_tuple_output)
-    #
-    # # Scenario 1: Local Single Machine
-    # print("\n--- Simulating Local Single Machine ---")
-    # print("Config: 1000 samples, 4 workers, 250 samples/worker, block_size=50")
-    #
-    # local_data = simulate_local_single_machine(
-    #     total_samples=1000,
-    #     num_workers=4,
-    #     block_size=50
-    # )
-    #
-    # analyze_mock_shuffle_quality(local_data, "Local Single Machine")
-    #
-    # local_output = os.path.join(script_dir, "mock_local_single_machine.png")
-    # plot_local_single_machine_mock(local_data, local_output)
+    # Scenario 0: Block+Tuple Shuffle (Single Thread) - NEW!
+    print("\n--- Simulating Block+Tuple Shuffle (Single Thread) ---")
+    print("Config: 1000 samples, block_size=25, buffer_size=250 (same as fig3.py)")
+
+    block_tuple_indices, block_tuple_processing = simulate_block_tuple_shuffle_single_thread(
+        total_samples=1000,
+        block_size=25,
+        buffer_size=250
+    )
+
+    analyze_mock_shuffle_quality(block_tuple_indices, "Block+Tuple Shuffle")
+
+    # Generate ID distribution plot
+    block_tuple_output = os.path.join(script_dir, "mock_block_tuple_shuffle.png")
+    plot_block_tuple_shuffle_mock(block_tuple_indices, block_tuple_processing, block_tuple_output)
+    
+    # Generate label distribution plot
+    block_tuple_label_output = os.path.join(script_dir, "mock_block_tuple_shuffle_label.png")
+    plot_mock_label_distribution(block_tuple_indices, "Block+Tuple Shuffle", block_tuple_label_output)
+
+    # Scenario 1: Local Single Machine
+    print("\n--- Simulating Local Single Machine ---")
+    print("Config: 1000 samples, 4 workers, 250 samples/worker, block_size=50")
+
+    local_data = simulate_local_single_machine(
+        total_samples=1000,
+        num_workers=4,
+        block_size=50
+    )
+
+    analyze_mock_shuffle_quality(local_data, "Local Single Machine")
+
+    # Generate ID distribution plot
+    local_output = os.path.join(script_dir, "mock_local_single_machine.png")
+    plot_local_single_machine_mock(local_data, local_output)
+    
+    # Generate label distribution plot
+    local_label_output = os.path.join(script_dir, "mock_local_single_machine_label.png")
+    plot_mock_label_distribution(local_data, "Local Single Machine", local_label_output)
     
     # Scenario 2: HDFS Distributed Multi-machine (File per Worker mode)
     print("\n--- Simulating HDFS Distributed Multi-machine (File per Worker) ---")
@@ -568,9 +722,14 @@ if __name__ == '__main__':
     
     analyze_mock_shuffle_quality(distributed_data_file, "HDFS Distributed (File per Worker)")
     
+    # Generate ID distribution plot
     distributed_output_file = os.path.join(script_dir, "mock_hdfs_distributed_file_mode.png")
     plot_hdfs_distributed_mock(distributed_data_file, distributed_output_file)
     
+    # Generate label distribution plot
+    distributed_label_output_file = os.path.join(script_dir, "mock_hdfs_distributed_file_mode_label.png")
+    plot_mock_label_distribution(distributed_data_file, "HDFS Distributed", distributed_label_output_file)
+
     # Scenario 3: HDFS Distributed Multi-machine (Block sharing mode)
     print("\n--- Simulating HDFS Distributed Multi-machine (Block Sharing) ---")
     print("Config: 2000 samples, 2 nodes, 4 workers/node, 250 samples/worker, block_size=50")
@@ -586,12 +745,23 @@ if __name__ == '__main__':
     
     analyze_mock_shuffle_quality(distributed_data_block, "HDFS Distributed (Block Sharing)")
     
+    # Generate ID distribution plot
     distributed_output_block = os.path.join(script_dir, "mock_hdfs_distributed_block_mode.png")
     plot_hdfs_distributed_mock(distributed_data_block, distributed_output_block)
     
+    # Generate label distribution plot
+    distributed_label_output_block = os.path.join(script_dir, "mock_hdfs_distributed_block_mode_label.png")
+    plot_mock_label_distribution(distributed_data_block, "HDFS Distributed", distributed_label_output_block)
+    
     print(f"\n=== Mock Visualization Complete ===")
     print(f"Generated files:")
-    print(f"  - {block_tuple_output}")
-    print(f"  - {local_output}")
-    print(f"  - {distributed_output_file}")
-    print(f"  - {distributed_output_block}")
+    print(f"  ID Distribution:")
+    print(f"    - {block_tuple_output}")
+    print(f"    - {local_output}")
+    print(f"    - {distributed_output_file}")
+    print(f"    - {distributed_output_block}")
+    print(f"  Label Distribution:")
+    print(f"    - {block_tuple_label_output}")
+    print(f"    - {local_label_output}")
+    print(f"    - {distributed_label_output_file}")
+    print(f"    - {distributed_label_output_block}")

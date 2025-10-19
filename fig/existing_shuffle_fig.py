@@ -248,6 +248,75 @@ def plot_shuffle_method(shuffle_mode, tuple_num, label_1_ratio, block_tuple_num,
     
     plt.close()
 
+def plot_label_distribution(shuffle_mode, tuple_num, label_1_ratio, block_tuple_num, buffer_tuple_num, title, output_file):
+    """Plot label distribution for a shuffle method (like fig3-origin.py)."""
+    
+    # Create table and get shuffled data
+    table = Table(tuple_num, label_1_ratio)
+    tuple_list = []
+    
+    if shuffle_mode == 'no_shuffle':
+        tuple_list = table.perform_no_shuffle()
+    elif shuffle_mode == 'fully_shuffle':
+        tuple_list = table.perform_fully_shuffle()
+    elif shuffle_mode == 'only_page_shuffle':
+        tuple_list = table.perform_only_page_shuffle(block_tuple_num)
+    elif shuffle_mode == 'page_tuple_shuffle':
+        tuple_list = table.perform_page_tuple_shuffle(block_tuple_num, buffer_tuple_num)
+    elif shuffle_mode == 'sliding_window_shuffle':
+        tuple_list = table.perform_sliding_window_shuffle()
+    elif shuffle_mode == 'mrs_shuffle':
+        tuple_list = table.perform_mrs_shuffle()
+    
+    # Create plot with CorgiPile style
+    fig = plt.figure(figsize=(3.2, 2.8))
+    ax = fig.add_subplot(111)
+    plt.subplots_adjust(left=0.157, bottom=0.186, right=0.964, top=0.976,
+                       wspace=0.205, hspace=0.2)
+    
+    ax.set_ylabel("#tuples", color='black')
+    ax.set_xlabel("The i-th batch (20 tuples per batch)")
+    
+    # Batch statistics
+    batch_index_list = []
+    label0_list = []
+    label1_list = []
+    
+    label1_count = 0
+    label0_count = 0
+    batch_size = 20
+    
+    for i in range(len(tuple_list)):
+        label = tuple_list[i].get_label()
+        if label == 1:
+            label1_count += 1
+        else:
+            label0_count += 1
+        
+        if (i + 1) % batch_size == 0 or i == len(tuple_list) - 1:
+            batch_index_list.append((i + 1) / batch_size)
+            label1_list.append(label1_count)
+            label0_list.append(label0_count)
+            label1_count = 0
+            label0_count = 0
+    
+    # Plot lines
+    ax.plot(batch_index_list, label1_list, label='label=+1', color='tab:blue')
+    ax.plot(batch_index_list, label0_list, label='label=-1', color='tab:red', linestyle='--')
+    
+    ax.set_ylim(ymin=-1)
+    ax.set_xlim(xmin=0)
+    ax.set_ylim(ymax=batch_size + 1)
+    
+    ax.legend()
+    ax.set_title(title)
+    
+    if output_file:
+        fig.savefig(output_file, dpi=300, bbox_inches='tight')
+        print(f"Saved: {output_file}")
+    
+    plt.close()
+
 def generate_all_shuffle_methods():
     """Generate all shuffle method visualizations."""
     
@@ -307,8 +376,8 @@ def generate_all_shuffle_methods():
     for method in shuffle_methods:
         print(f"\nGenerating {method['title']}...")
         
+        # Generate ID distribution plot
         output_file = os.path.join(output_dir, method['filename'])
-        
         plot_shuffle_method(
             shuffle_mode=method['mode'],
             tuple_num=tuple_num,
@@ -317,6 +386,19 @@ def generate_all_shuffle_methods():
             buffer_tuple_num=buffer_tuple_num,
             title=method['title'],
             output_file=output_file
+        )
+        
+        # Generate label distribution plot
+        label_filename = method['filename'].replace('.png', '_label.png')
+        label_output_file = os.path.join(output_dir, label_filename)
+        plot_label_distribution(
+            shuffle_mode=method['mode'],
+            tuple_num=tuple_num,
+            label_1_ratio=label_1_ratio,
+            block_tuple_num=block_tuple_num,
+            buffer_tuple_num=buffer_tuple_num,
+            title=method['title'],
+            output_file=label_output_file
         )
     
     print(f"\n=== All shuffle methods generated successfully ===")
