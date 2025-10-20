@@ -12,7 +12,6 @@ CorgiPile Dataset API is designed for **large-scale machine learning scenarios**
 - **Multi-Machine Distributed Training**: Seamless scaling from 1 to 100+ machines
 - **Cloud & Cluster Environments**: HDFS, distributed storage systems
 - **High-Performance Computing**: Maximize GPU utilization with efficient data loading
-- **Continuous Training**: Production ML pipelines requiring robust data handling
 
 ### **Core Advantages**
 
@@ -73,10 +72,7 @@ git clone https://github.com/yourusername/corgipile-dataset-api.git
 cd corgipile-dataset-api
 
 # Install dependencies
-pip install torch>=1.12.0 numpy>=1.21.0 filelock>=3.7.0
-
-# For HDFS support (optional)
-pip install pyarrow>=8.0.0
+pip install -r requirements.txt
 ```
 
 ## Quick Start
