@@ -57,6 +57,15 @@ Tuple id denotes the tuple position after shuffling. #tuple refers to the number
 - **Production Debugging**: Full sample traceability with `(file_id, inner_index)` tracking
 - **Storage Agnostic**: Local files, HDFS, easily extensible to S3/GCS
 
+## Application
+
+CorgiPile has garnered positive feedback and adoption in various communities and systems beyond our initial implementation. For instance:
+
+-  **CorgiPile-PostgreSQL**: Integrated into PostgreSQL for efficient data shuffling in database-driven ML pipelines, improving query and training performance on large stored datasets (https://github.com/DS3Lab/CorgiPile-PostgreSQL).
+- **CorgiPile-openGauss (GaussML)**: Adopted in the openGauss , enhancing shuffled data access for distributed ML workloads with reduced I/O latency (https://ieeexplore.ieee.org/document/10597842).
+- **Mobileye's Corg²**: An improved variant used by Mobileye, which applies CorgiPile twice—once offline for initial data preparation and once online during training—to further optimize for real-time autonomous driving data processing (https://arxiv.org/pdf/2309.01640).
+- **LLM Training Systems**: Enhanced versions of CorgiPile have been employed in MLSys-inspired frameworks for LLM pretraining, where handling terabyte-scale corpora benefits from the method's efficiency, as evidenced by community discussions and adaptations in open-source LLM tools (https://openreview.net/forum?id=I2LF8QHaua).
+
 ## Installation
 
 ```bash
@@ -305,3 +314,37 @@ python examples/distributed_example.py --mode hdfs --rank $RANK --world_size $WO
     --hdfs_host namenode-host --hdfs_port 9000 --hdfs_user hadoop-user
 ```
 
+
+Each example includes detailed comments explaining the CorgiPile-specific parts!
+
+
+
+## Citation
+
+```bibtex
+@article{DBLP:journals/vldb/XuQYJRGKLLWYZ24,
+  author       = {Lijie Xu and
+                  Shuang Qiu and
+                  Binhang Yuan and
+                  Jiawei Jiang and
+                  C{\'{e}}dric Renggli and
+                  Shaoduo Gan and
+                  Kaan Kara and
+                  Guoliang Li and
+                  Ji Liu and
+                  Wentao Wu and
+                  Jieping Ye and
+                  Ce Zhang},
+  title        = {Stochastic gradient descent without full data shuffle: with applications
+                  to in-database machine learning and deep learning systems},
+  journal      = {{VLDB} J.},
+  volume       = {33},
+  number       = {5},
+  pages        = {1231--1255},
+  year         = {2024},
+  url          = {https://doi.org/10.1007/s00778-024-00845-0},
+  doi          = {10.1007/S00778-024-00845-0},
+  timestamp    = {Sat, 06 Sep 2025 20:29:54 +0200},
+  biburl       = {https://dblp.org/rec/journals/vldb/XuQYJRGKLLWYZ24.bib},
+  bibsource    = {dblp computer science bibliography, https://dblp.org}
+}
